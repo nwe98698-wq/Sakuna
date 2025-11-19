@@ -667,7 +667,7 @@ def update_bet_sequence(user_id, result):
             new_index = 0  # Win ရင် အစပြန်စ
             print(f"DEBUG: WIN - Reset index to 0")
         else:
-            # Loss ရင် နောက်တစ်ဆင့်သို့
+            # Loss ရင် နောက်တစ်ဆင့်သို့
             new_index = current_index + 1
             print(f"DEBUG: LOSE - Current index: {current_index} -> New index: {new_index}")
             
@@ -2136,25 +2136,25 @@ async def auto_login_user(update: Update, context: ContextTypes.DEFAULT_TYPE, us
             
             platform_name = get_platform_name(user_session['platform'])
             
-            success_text = f"""
-✅ Auto Login Successful!
+            success_text = f"""✅ Auto Login Successful!
 
 Platform: {platform_name}
 Game ID: {user_game_id}
 Account: {user_session['phone']}
 Balance: {balance:,.0f} K
 
-Status: Authorized ✅
-            """
-            await loading_msg.edit_text(success_text)
+Status: Authorized ✅"""
+            
+            # FIXED: Remove parse_mode or set to None
+            await loading_msg.edit_text(success_text, parse_mode=None)
             await update.message.reply_text("Choose an option:", reply_markup=get_main_keyboard(user_id))
             
         else:
-            await loading_msg.edit_text(f"❌ Auto login failed: {message}")
+            await loading_msg.edit_text(f"❌ Auto login failed: {message}", parse_mode=None)
             await update.message.reply_text("Please login manually:", reply_markup=get_login_keyboard())
             
     except Exception as e:
-        await loading_msg.edit_text(f"❌ Auto login error: {str(e)}")
+        await loading_msg.edit_text(f"❌ Auto login error: {str(e)}", parse_mode=None)
         await update.message.reply_text("Please login manually:", reply_markup=get_login_keyboard())
 
 def get_platform_name(platform_code):
@@ -2691,11 +2691,10 @@ async def process_login(update: Update, context: ContextTypes.DEFAULT_TYPE, save
                     user_session['logged_in'] = False
                     await loading_msg.edit_text(
                         f"❌ Login Failed - Unauthorized Account\n\n"
-                        f"Your Game ID: `{user_game_id}`\n"
+                        f"Your Game ID: {user_game_id}\n"
                         f"Platform: {get_platform_name(platform)}\n\n"
                         f"This account is not authorized to use this bot.\n"
-                        f"Please contact admin for access: {ADMIN_CONTACT}",
-                        parse_mode='Markdown'
+                        f"Please contact admin for access: {ADMIN_CONTACT}"
                     )
                     return
             else:
@@ -2715,24 +2714,24 @@ async def process_login(update: Update, context: ContextTypes.DEFAULT_TYPE, save
             
             platform_name = get_platform_name(user_session['platform'])
             
-            success_text = f"""
-✅ Login Successful!
+            success_text = f"""✅ Login Successful!
 
 Platform: {platform_name}
-Game ID: `{user_game_id}`
+Game ID: {user_game_id}
 Account: {user_session['phone']}
 Balance: {balance:,.0f} K
 
-Status: Authorized ✅
-            """
-            await loading_msg.edit_text(success_text, parse_mode='Markdown')
+Status: Authorized ✅"""
+            
+            # FIXED: Remove parse_mode or set to None
+            await loading_msg.edit_text(success_text, parse_mode=None)
             await update.message.reply_text("Choose an option:", reply_markup=get_main_keyboard(user_id))
             
         else:
-            await loading_msg.edit_text(f"❌ Login failed: {message}")
+            await loading_msg.edit_text(f"❌ Login failed: {message}", parse_mode=None)
             
     except Exception as e:
-        await loading_msg.edit_text(f"❌ Login error: {str(e)}")
+        await loading_msg.edit_text(f"❌ Login error: {str(e)}", parse_mode=None)
 
 async def place_bet_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, bet_type: int):
     """Handle bet placement"""
