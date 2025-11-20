@@ -19,7 +19,7 @@ CHANNEL_USERNAME = "@Vipsafesingalchannel298"
 CHANNEL_LINK = "https://t.me/Vipsafesingalchannel298"
 
 # Admin configuration - @Smile_p2 ရဲ့ User ID ကို ဒီမှာထည့်ပါ
-ADMIN_USER_ID = "6923056408"  # Replace with @Smile_p2's actual user ID
+ADMIN_USER_ID = "8370471165"  # Replace with @Smile_p2's actual user ID
 
 # Multiple API endpoints - 777 only
 API_ENDPOINTS = {
