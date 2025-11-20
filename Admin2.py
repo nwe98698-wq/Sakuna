@@ -292,9 +292,57 @@ def get_allowed_game_ids():
         return []
 
 def is_game_id_allowed(game_id):
-    """Check if game ID is allowed"""
+    """Check if game ID is allowed - WITH BETTER MATCHING"""
     allowed_ids = get_allowed_game_ids()
-    return game_id in allowed_ids
+    game_id_str = str(game_id).strip()
+    
+    print(f"DEBUG: Checking Game ID: '{game_id_str}'")
+    print(f"DEBUG: Against Allowed IDs: {allowed_ids}")
+    
+    # Check exact match first
+    if game_id_str in allowed_ids:
+        print(f"DEBUG: Exact match found for '{game_id_str}'")
+        return True
+    
+    # Check if any allowed ID is contained in the game ID (for longer IDs)
+    for allowed_id in allowed_ids:
+        if allowed_id in game_id_str:
+            print(f"DEBUG: Partial match found: '{allowed_id}' in '{game_id_str}'")
+            return True
+    
+    print(f"DEBUG: No match found for '{game_id_str}'")
+    return False
+    
+    async def debug_game_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Debug command to check game ID status"""
+    user_id = str(update.effective_user.id)
+    
+    if user_id != ADMIN_USER_ID:
+        await update.message.reply_text("❌ You are not authorized to use this command.")
+        return
+    
+    user_session = user_sessions.get(user_id, {})
+    
+    debug_info = "🔍 Game ID Debug Information\n\n"
+    
+    # Current allowed game IDs
+    allowed_ids = get_allowed_game_ids()
+    debug_info += f"Allowed Game IDs: {allowed_ids}\n"
+    debug_info += f"Total: {len(allowed_ids)}\n\n"
+    
+    # If logged in, show current game ID
+    if user_session.get('logged_in') and user_session.get('api_instance'):
+        try:
+            user_info = await user_session['api_instance'].get_user_info()
+            current_game_id = str(user_info.get('userId', 'N/A'))
+            debug_info += f"Your Current Game ID: '{current_game_id}'\n"
+            debug_info += f"Match Status: {'✅ ALLOWED' if is_game_id_allowed(current_game_id) else '❌ NOT ALLOWED'}\n"
+        except Exception as e:
+            debug_info += f"Error getting user info: {e}\n"
+    else:
+        debug_info += "Not logged in - cannot check current Game ID\n"
+    
+    await update.message.reply_text(debug_info, parse_mode='Markdown')
 
 def get_game_id_info(game_id):
     """Get information about a game ID"""
@@ -1943,7 +1991,7 @@ Press Run Bot to start auto betting!
     await update.message.reply_text(welcome_text, reply_markup=get_main_keyboard(user_id), parse_mode='Markdown')
 
 async def auto_login_user(update: Update, context: ContextTypes.DEFAULT_TYPE, user_id: str):
-    """Auto login with saved credentials - WITH GAME ID CHECK"""
+    """Auto login with saved credentials - WITH PROPER GAME ID CHECK"""
     user_session = user_sessions.get(user_id)
     if not user_session:
         return
@@ -1959,7 +2007,10 @@ async def auto_login_user(update: Update, context: ContextTypes.DEFAULT_TYPE, us
         if success:
             # Get user info to check game ID
             user_info = await user_session['api_instance'].get_user_info()
-            game_id = user_info.get('userId', '')
+            game_id = str(user_info.get('userId', ''))
+            
+            print(f"DEBUG: Auto Login successful, Game ID from API: '{game_id}'")
+            print(f"DEBUG: Allowed Game IDs: {get_allowed_game_ids()}")
             
             # Check if game ID is allowed
             if not is_game_id_allowed(game_id):
@@ -1993,11 +2044,11 @@ Status: ✅ VERIFIED
             await update.message.reply_text("Choose an option:", reply_markup=get_main_keyboard(user_id))
             
         else:
-            await loading_msg.edit_text(f"Auto login failed: {message}")
+            await loading_msg.edit_text(f"❌ Auto login failed: {message}")
             await update.message.reply_text("Please login manually:", reply_markup=get_login_keyboard())
             
     except Exception as e:
-        await loading_msg.edit_text(f"Auto login error: {str(e)}")
+        await loading_msg.edit_text(f"❌ Auto login error: {str(e)}")
         await update.message.reply_text("Please login manually:", reply_markup=get_login_keyboard())
 
 def get_platform_name(platform_code):
@@ -2503,7 +2554,6 @@ async def clear_colour_pattern_command(update: Update, context: ContextTypes.DEF
         await update.message.reply_text("Error clearing Colour pattern.")
 
 async def process_login(update: Update, context: ContextTypes.DEFAULT_TYPE, save_credentials=False):
-    """Process login with GAME ID VERIFICATION"""
     user_id = str(update.effective_user.id)
     user_session = user_sessions.get(user_id)
     
@@ -2522,7 +2572,10 @@ async def process_login(update: Update, context: ContextTypes.DEFAULT_TYPE, save
         if success:
             # Get user info to check game ID
             user_info = await user_session['api_instance'].get_user_info()
-            game_id = user_info.get('userId', '')
+            game_id = str(user_info.get('userId', ''))
+            
+            print(f"DEBUG: Login successful, Game ID from API: '{game_id}'")
+            print(f"DEBUG: Allowed Game IDs: {get_allowed_game_ids()}")
             
             # Check if game ID is allowed
             if not is_game_id_allowed(game_id):
@@ -5020,7 +5073,7 @@ def main():
         return
     
     init_database()
-    migrate_database()  # Run migration on startup
+    migrate_database()
     
     application = Application.builder().token(BOT_TOKEN).build()
     
@@ -5029,6 +5082,7 @@ def main():
     application.add_handler(CommandHandler("removegameid", admin_remove_game_id))
     application.add_handler(CommandHandler("listgameids", admin_list_game_ids))
     application.add_handler(CommandHandler("gameidstats", admin_game_id_stats))
+    application.add_handler(CommandHandler("debuggameids", debug_game_ids))  # Add debug command
     
     application.add_handler(CommandHandler("start", start_command))
     application.add_handler(CallbackQueryHandler(handle_callback_query))
