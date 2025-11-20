@@ -19,7 +19,7 @@ CHANNEL_USERNAME = "@Vipsafesingalchannel298"
 CHANNEL_LINK = "https://t.me/Vipsafesingalchannel298"
 
 # Admin configuration - @Smile_p2 ရဲ့ User ID ကို ဒီမှာထည့်ပါ
-ADMIN_USER_ID = "6328953001"  # Replace with @Smile_p2's actual user ID
+ADMIN_USER_ID = "6328953001" # Replace with @Smile_p2's actual user ID
 
 # Multiple API endpoints - 777 only
 API_ENDPOINTS = {
@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 # Database setup
 DB_NAME = "auto_bot.db"
+
 
 def migrate_database():
     """Migrate database to add missing columns"""
@@ -294,7 +295,14 @@ def get_allowed_game_ids():
 def is_game_id_allowed(game_id):
     """Check if game ID is allowed"""
     allowed_ids = get_allowed_game_ids()
-    return game_id in allowed_ids
+    
+    # Convert to string and strip whitespace
+    game_id_str = str(game_id).strip()
+    allowed_ids_str = [str(id).strip() for id in allowed_ids]
+    
+    print(f"DEBUG: Checking '{game_id_str}' in {allowed_ids_str}")
+    
+    return game_id_str in allowed_ids_str
 
 def get_game_id_info(game_id):
     """Get information about a game ID"""
@@ -5004,6 +5012,25 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "Please use the buttons below to navigate.",
             reply_markup=get_main_keyboard(user_id)
         )
+
+async def debug_game_ids(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    if user_id != ADMIN_USER_ID:
+        return
+    
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('SELECT game_id FROM allowed_game_ids')
+    results = cursor.fetchall()
+    conn.close()
+    
+    debug_text = "Database ထဲက Game IDs:\n"
+    for i, row in enumerate(results, 1):
+        game_id = row[0]
+        debug_text += f"{i}. '{game_id}' (Length: {len(str(game_id))})\n"
+    
+    await update.message.reply_text(debug_text)
+
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.error(f"Exception while handling an update: {context.error}")
